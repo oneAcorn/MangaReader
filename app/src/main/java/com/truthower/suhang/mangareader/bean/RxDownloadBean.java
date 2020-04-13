@@ -12,6 +12,7 @@ import com.truthower.suhang.mangareader.spider.SpiderBase;
 import com.truthower.suhang.mangareader.utils.ShareObjUtil;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -22,7 +23,7 @@ public class RxDownloadBean extends BaseBean {
     private String mangaName;
     private String mangaUrl;
     private String thumbnailUrl;
-    private ArrayList<RxDownloadChapterBean> chapters;
+    private List<RxDownloadChapterBean> chapters;
     private CommonDownloader downloader;
     private int chapterCount;
 
@@ -50,11 +51,11 @@ public class RxDownloadBean extends BaseBean {
         this.thumbnailUrl = thumbnailUrl;
     }
 
-    public ArrayList<RxDownloadChapterBean> getChapters() {
+    public List<RxDownloadChapterBean> getChapters() {
         return chapters;
     }
 
-    public void setChapters(ArrayList<RxDownloadChapterBean> chapters) {
+    public void setChapters(List<RxDownloadChapterBean> chapters) {
         this.chapters = chapters;
     }
 

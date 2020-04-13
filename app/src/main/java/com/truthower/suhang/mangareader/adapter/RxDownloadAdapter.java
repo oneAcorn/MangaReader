@@ -32,7 +32,7 @@ import androidx.recyclerview.widget.RecyclerView;
  */
 public class RxDownloadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context mContext;
-    private ArrayList<RxDownloadChapterBean> list = null;
+    private List<RxDownloadChapterBean> list = null;
 
     public RxDownloadAdapter(Context context) {
         this.mContext = context;
@@ -89,11 +89,11 @@ public class RxDownloadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         }
     }
 
-    public void setList(ArrayList<RxDownloadChapterBean> list) {
+    public void setList(List<RxDownloadChapterBean> list) {
         this.list = list;
     }
 
-    public ArrayList<RxDownloadChapterBean> getList() {
+    public List<RxDownloadChapterBean> getList() {
         return list;
     }
 

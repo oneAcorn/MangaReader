@@ -1,5 +1,7 @@
 package com.truthower.suhang.mangareader.bean;
 
+import androidx.annotation.NonNull;
+
 /**
  * Created by Administrator on 2017/7/18.
  */
@@ -49,5 +51,11 @@ public class RxDownloadPageBean extends BaseBean {
 
     public void setMangaName(String mangaName) {
         this.mangaName = mangaName;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return pageName;
     }
 }

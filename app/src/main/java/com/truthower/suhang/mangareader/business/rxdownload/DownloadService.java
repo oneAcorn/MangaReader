@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -47,7 +48,7 @@ import io.reactivex.schedulers.Schedulers;
 public class DownloadService extends Service {
     private String TAG = "DownloadService";
     private RxDownloadBean downloadBean;
-    private ArrayList<RxDownloadChapterBean> chapters;
+    private List<RxDownloadChapterBean> chapters;
     private Subscription mDisposable;
     private EasyToast mEasyToast;
     private MangaDownloader mDownloader;
@@ -96,34 +97,17 @@ public class DownloadService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-//        for (RxDownloadChapterBean item : chapters) {
-//            if (item.isDownloaded()) {
-//                chapters.remove(item);
-//            }
-//        }
         Flowable
-//                .create(new FlowableOnSubscribe<RxDownloadChapterBean>() {
-//                    @Override
-//                    public void subscribe(FlowableEmitter<RxDownloadChapterBean> e) throws Exception {
-//                        while (!e.isCancelled() && e.requested() > 0 && chapters.iterator().hasNext()) {
-//                            RxDownloadChapterBean item = chapters.iterator().next();
-//                            if (!item.isDownloaded()) {
-//                                e.onNext(item);
-//                                Logger.d(TAG + "chapter emit  " + item.getChapterName());
-//                            }
-//                        }
-//                    }
-//                }, BackpressureStrategy.ERROR)
                 .fromIterable(chapters)
                 .onBackpressureBuffer()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(Schedulers.computation())
-                .concatMap(new Function<RxDownloadChapterBean, Publisher<ArrayList<RxDownloadPageBean>>>() {
+                .concatMap(new Function<RxDownloadChapterBean, Publisher<List<RxDownloadPageBean>>>() {
                     @Override
-                    public Publisher<ArrayList<RxDownloadPageBean>> apply(final RxDownloadChapterBean bean) throws Exception {
-                        return new Publisher<ArrayList<RxDownloadPageBean>>() {
+                    public Publisher<List<RxDownloadPageBean>> apply(final RxDownloadChapterBean bean) throws Exception {
+                        return new Publisher<List<RxDownloadPageBean>>() {
                             @Override
-                            public void subscribe(final Subscriber<? super ArrayList<RxDownloadPageBean>> s) {
+                            public void subscribe(final Subscriber<? super List<RxDownloadPageBean>> s) {
                                 if (null != bean.getPages() && bean.getPages().size() > 0) {
                                     //之前获取过该章节的图片地址的情况
                                     s.onNext(bean.getPages());
@@ -156,9 +140,9 @@ public class DownloadService extends Service {
                         };
                     }
                 })
-                .flatMap(new Function<ArrayList<RxDownloadPageBean>, Publisher<RxDownloadPageBean>>() {
+                .flatMap(new Function<List<RxDownloadPageBean>, Publisher<RxDownloadPageBean>>() {
                     @Override
-                    public Publisher<RxDownloadPageBean> apply(final ArrayList<RxDownloadPageBean> beans) throws Exception {
+                    public Publisher<RxDownloadPageBean> apply(final List<RxDownloadPageBean> beans) throws Exception {
                         return new Publisher<RxDownloadPageBean>() {
                             @Override
                             public void subscribe(Subscriber<? super RxDownloadPageBean> s) {
@@ -215,6 +199,16 @@ public class DownloadService extends Service {
                     }
                 });
         return super.onStartCommand(intent, flags, startId);
+    }
+
+    private List<RxDownloadPageBean> getPages(List<RxDownloadChapterBean> chapters) {
+        List<RxDownloadPageBean> pages = new ArrayList<>();
+        for (RxDownloadChapterBean chapter : chapters) {
+            if(chapter.getPages().size()>0){
+
+            }
+        }
+        return pages;
     }
 
     private Bitmap downloadUrlBitmap(String urlString) {

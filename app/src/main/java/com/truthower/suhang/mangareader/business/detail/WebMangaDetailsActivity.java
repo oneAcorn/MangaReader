@@ -60,6 +60,7 @@ import org.greenrobot.eventbus.EventBus;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import pub.devrel.easypermissions.AfterPermissionGranted;
@@ -604,7 +605,7 @@ public class WebMangaDetailsActivity extends TTSActivity implements AdapterView.
             downloadBean.setMangaUrl(currentManga.getUrl());
             downloadBean.setThumbnailUrl(currentManga.getWebThumbnailUrl());
             downloadBean.setChapterCount(end-start+1);
-            ArrayList<RxDownloadChapterBean> chapters = new ArrayList<>();
+            List<RxDownloadChapterBean> chapters = new ArrayList<>();
             for (int i = start; i <= end; i++) {
                 RxDownloadChapterBean item = new RxDownloadChapterBean();
                 item.setChapterUrl(currentManga.getChapters().get(i).getChapterUrl());

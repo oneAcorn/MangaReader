@@ -23,6 +23,7 @@ import com.truthower.suhang.mangareader.listener.OnRecycleItemLongClickListener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -33,7 +34,7 @@ import androidx.recyclerview.widget.RecyclerView;
  */
 public class DownloadRecyclerAdapter extends RecyclerView.Adapter<DownloadRecyclerAdapter.ViewHolder> {
     private Context context;
-    private ArrayList<RxDownloadChapterBean> list = new ArrayList<>();
+    private List<RxDownloadChapterBean> list = new ArrayList<>();
 
     public DownloadRecyclerAdapter(Context context) {
         this.context = context;
@@ -64,7 +65,7 @@ public class DownloadRecyclerAdapter extends RecyclerView.Adapter<DownloadRecycl
         return list.size();
     }
 
-    public void setList(ArrayList<RxDownloadChapterBean> list) {
+    public void setList(List<RxDownloadChapterBean> list) {
         this.list = list;
     }
 

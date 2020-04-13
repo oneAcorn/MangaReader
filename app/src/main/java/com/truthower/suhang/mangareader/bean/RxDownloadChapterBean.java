@@ -1,13 +1,15 @@
 package com.truthower.suhang.mangareader.bean;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class RxDownloadChapterBean extends BaseBean {
     private String chapterUrl;
     private String chapterName;
-    private volatile int downloadedCount;
+    private AtomicInteger downloadedCount=new AtomicInteger();
     private int pageCount;
-    private ArrayList<RxDownloadPageBean> pages;
+    private List<RxDownloadPageBean> pages;
 
     public String getChapterUrl() {
         return chapterUrl;
@@ -25,11 +27,11 @@ public class RxDownloadChapterBean extends BaseBean {
         this.chapterName = chapterName;
     }
 
-    public ArrayList<RxDownloadPageBean> getPages() {
+    public List<RxDownloadPageBean> getPages() {
         return pages;
     }
 
-    public void setPages(ArrayList<RxDownloadPageBean> pages) {
+    public void setPages(List<RxDownloadPageBean> pages) {
         this.pages = pages;
     }
 
@@ -37,12 +39,21 @@ public class RxDownloadChapterBean extends BaseBean {
         return pageCount;
     }
 
-    public synchronized void addDownloadedCount() {
-        downloadedCount++;
-    }
 
     public void setPageCount(int pageCount) {
         this.pageCount = pageCount;
+    }
+
+    public AtomicInteger getDownloadedCount() {
+        return downloadedCount;
+    }
+
+    public void setDownloadedCount(AtomicInteger downloadedCount) {
+        this.downloadedCount = downloadedCount;
+    }
+
+    public boolean isDownloaded() {
+        return downloadedCount.get() >= pageCount;
     }
 
     public int getDownloadCount() {
@@ -58,22 +69,4 @@ public class RxDownloadChapterBean extends BaseBean {
         return count;
     }
 
-    public int getDownloadedCount() {
-        return downloadedCount;
-    }
-
-    public boolean isDownloaded() {
-        return downloadedCount >= pageCount;
-    }
-//    public boolean isDownloaded() {
-//        if (null == pages || pages.size() == 0) {
-//            return false;
-//        }
-//        for (RxDownloadPageBean item : pages) {
-//            if (!item.isDownloaded()) {
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
 }

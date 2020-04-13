@@ -81,7 +81,7 @@ public class TpDownloadActivity extends BaseActivity implements View.OnClickList
             RxDownloadChapterBean chapterBean = mDownloadBean.getChapters().get(0);
             if (null != chapterBean) {
                 downloadProgressBar.setMax(chapterBean.getPageCount());
-                downloadProgressBar.setProgress(chapterBean.getDownloadedCount());
+                downloadProgressBar.setProgress(chapterBean.getDownloadedCount().get());
                 chapterProgressTv.setText(chapterBean.getDownloadedCount() + "/" + chapterBean.getPageCount());
             }
             toggleEmpty(false);
@@ -106,7 +106,7 @@ public class TpDownloadActivity extends BaseActivity implements View.OnClickList
             if (null != currentChapter) {
                 mangaChapterNameTv.setText("章        节:  第" + currentChapter.getChapterName() + "话");
                 downloadProgressBar.setMax(currentChapter.getPageCount());
-                downloadProgressBar.setProgress(currentChapter.getDownloadedCount());
+                downloadProgressBar.setProgress(currentChapter.getDownloadedCount().get());
                 chapterProgressTv.setText(currentChapter.getDownloadedCount() + "/" + currentChapter.getPageCount());
             }
         } catch (Exception e) {

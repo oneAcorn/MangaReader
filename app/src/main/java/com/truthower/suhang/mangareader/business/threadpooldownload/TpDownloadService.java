@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 import com.truthower.suhang.mangareader.R;
@@ -16,6 +17,9 @@ import com.truthower.suhang.mangareader.bean.DownloadBean;
 import com.truthower.suhang.mangareader.bean.RxDownloadBean;
 import com.truthower.suhang.mangareader.bean.RxDownloadChapterBean;
 import com.truthower.suhang.mangareader.bean.RxDownloadPageBean;
+import com.truthower.suhang.mangareader.business.blockConcurrent.Consumer;
+import com.truthower.suhang.mangareader.business.blockConcurrent.LogUtil;
+import com.truthower.suhang.mangareader.business.blockConcurrent.Storage;
 import com.truthower.suhang.mangareader.business.rxdownload.DownloadCaretaker;
 import com.truthower.suhang.mangareader.business.rxdownload.RxDownloadActivity;
 import com.truthower.suhang.mangareader.eventbus.EventBusEvent;
@@ -28,34 +32,39 @@ import com.truthower.suhang.mangareader.widget.toast.EasyToast;
 import org.greenrobot.eventbus.EventBus;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
-public class TpDownloadService extends Service {
+public class TpDownloadService extends Service implements Consumer.IDispatcher<RxDownloadPageBean> {
     private String TAG = "TpDownloadService";
     private RxDownloadBean downloadBean;
-    private ArrayList<RxDownloadChapterBean> chapters;
     private EasyToast mEasyToast;
     private MangaDownloader mDownloader;
     private NotificationCompat.Builder notificationBuilder;
     private RemoteViews remoteViews;
     private NotificationManager notificationManager;
-    private RxDownloadChapterBean currentChapter;
+
     private ExecutorService mExecutorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private List<RxDownloadChapterBean> chapters;
+    private final List<RxDownloadChapterBean> toRemoveChapters = new ArrayList<>();
+    private boolean isFinished = false;
 
     @Override
     public void onCreate() {
         super.onCreate();
         Logger.setTag("TpDownloadService");
-        createNotification(this);
-        startForeground(10, notificationBuilder.build());
         mEasyToast = new EasyToast(this);
         downloadBean = DownloadCaretaker.getDownloadMemoto(this);
         chapters = downloadBean.getChapters();
         mDownloader = downloadBean.getDownloader();
+        createNotification(this);
+        startForeground(10, notificationBuilder.build());
     }
 
     private void createNotification(Context context) {
@@ -86,10 +95,10 @@ public class TpDownloadService extends Service {
         }
     }
 
-    private void updateNotification() {
+    private void updateNotification(RxDownloadChapterBean chapter) {
         try {
-            remoteViews.setProgressBar(R.id.notification_download_progress_bar, currentChapter.getPageCount()
-                    , currentChapter.getDownloadedCount(), false);
+            remoteViews.setProgressBar(R.id.notification_download_progress_bar, chapter.getPageCount()
+                    , chapter.getDownloadedCount().get(), false);
             notificationManager.notify(10, notificationBuilder.build());
         } catch (Exception e) {
             Logger.d("e" + e);
@@ -103,74 +112,18 @@ public class TpDownloadService extends Service {
     }
 
     private void getChapterInfo() {
-        if (null == chapters || chapters.size() <= 0) {
+        if (null == chapters || chapters.size() == toRemoveChapters.size()) {
             //下载完成
             mEasyToast.showToast(downloadBean.getMangaName() + "全部下载完成!");
             DownloadCaretaker.clean(this);
             EventBus.getDefault().post(new TpDownloadEvent(EventBusEvent.DOWNLOAD_FINISH_EVENT));
             return;
         }
-        currentChapter = chapters.get(0);
-        if (null != currentChapter.getPages() && currentChapter.getPages().size() > 0) {
-            //之前获取过该章节的图片地址的情况
-            Logger.d(TAG + "previous pages");
-            for (RxDownloadPageBean item : currentChapter.getPages()) {
-                if (!item.isDownloaded()) {
-                    executeRunable(item);
-                }
-            }
-        } else {
-            mDownloader.getMangaChapterPics(this, currentChapter.getChapterUrl(), new JsoupCallBack<ArrayList<String>>() {
-                @Override
-                public void loadSucceed(ArrayList<String> result) {
-                    ArrayList<RxDownloadPageBean> pages = new ArrayList<>();
-                    for (int i = 0; i < result.size(); i++) {
-                        RxDownloadPageBean item = new RxDownloadPageBean();
-                        item.setPageUrl(result.get(i));
-                        item.setPageName(downloadBean.getMangaName() + "_" + currentChapter.getChapterName() + "_" + i + ".png");
-                        item.setChapterName(currentChapter.getChapterName());
-                        item.setMangaName(downloadBean.getMangaName());
-                        pages.add(item);
-
-                        executeRunable(item);
-                        Logger.d("chapter: " + item.getChapterName() + " page" + i);
-                    }
-                    Logger.d("for done");
-                    currentChapter.setPages(pages);
-                    currentChapter.setPageCount(result.size());
-                }
-
-                @Override
-                public void loadFailed(String error) {
-                    Logger.d("chapter load failed: " + error);
-                }
-            });
-        }
-    }
-
-    private void executeRunable(RxDownloadPageBean item) {
-        try {
-            mExecutorService.execute(new PageDownloadRunner(item, new OnResultListener() {
-                @Override
-                public void onFinish() {
-                    currentChapter.addDownloadedCount();
-                    EventBus.getDefault().post(new TpDownloadEvent(EventBusEvent.DOWNLOAD_PAGE_FINISH_EVENT, currentChapter));
-                    updateNotification();
-                    if (currentChapter.isDownloaded()) {
-                        chapters.remove(0);
-                        EventBus.getDefault().post(new TpDownloadEvent(EventBusEvent.DOWNLOAD_CHAPTER_FINISH_EVENT, downloadBean));
-                        DownloadCaretaker.saveDownloadMemoto(TpDownloadService.this, downloadBean);
-                        getChapterInfo();
-                    }
-                }
-
-                @Override
-                public void onFailed() {
-
-                }
-            }));
-        } catch (Exception e) {
-            e.printStackTrace();
+        Storage<RxDownloadPageBean> storage = new Storage<>(30);
+        mExecutorService.execute(new PageProducer(this, storage, chapters, mDownloader, downloadBean.getMangaName()));
+        int threadCount = Runtime.getRuntime().availableProcessors();
+        for (int i = 0; i < threadCount - 1; i++) {
+            mExecutorService.execute(new PageConsumer(storage, this));
         }
     }
 
@@ -185,5 +138,44 @@ public class TpDownloadService extends Service {
         super.onDestroy();
         mExecutorService.shutdown();
         DownloadCaretaker.saveDownloadMemoto(this, downloadBean);
+    }
+
+    @Override
+    public synchronized void finish(RxDownloadPageBean page) {
+        for (RxDownloadChapterBean chapter : chapters) {
+            int downloadCount = 0;
+            if (chapter.getChapterName().equals(page.getChapterName())) {
+                //不要remove,而是设置一个下载完成标志,防止ConcurrentModificationException
+                page.setDownloaded(true);
+                EventBus.getDefault().post(new TpDownloadEvent(EventBusEvent.DOWNLOAD_PAGE_FINISH_EVENT, chapter)); //这个章节下载完成一页
+                downloadCount = chapter.getDownloadedCount().incrementAndGet();
+                updateNotification(chapter);
+                LogUtil.i("下完1页 " + page.toString());
+            }
+            if (chapter.getPages() != null && chapter.getPageCount() == downloadCount) { //此章节下载完成
+                toRemoveChapters.add(chapter);
+                List<RxDownloadChapterBean> removedChapters = new ArrayList<>(chapters);
+                removedChapters.removeAll(toRemoveChapters);
+                downloadBean.setChapters(removedChapters);
+                EventBus.getDefault().post(new TpDownloadEvent(EventBusEvent.DOWNLOAD_CHAPTER_FINISH_EVENT, downloadBean));
+                DownloadCaretaker.saveDownloadMemoto(TpDownloadService.this, downloadBean);
+                LogUtil.i("下完一章 " + chapter.getChapterName());
+            }
+        }
+        if (chapters.size() == toRemoveChapters.size()) {
+            isFinished = true;
+            mExecutorService.shutdownNow();
+
+            LogUtil.i("全部下完");
+            //下载完成
+            mEasyToast.showToast(downloadBean.getMangaName() + "全部下载完成!");
+            DownloadCaretaker.clean(this);
+            EventBus.getDefault().post(new TpDownloadEvent(EventBusEvent.DOWNLOAD_FINISH_EVENT));
+        }
+    }
+
+    @Override
+    public boolean isFinished() {
+        return isFinished;
     }
 }
